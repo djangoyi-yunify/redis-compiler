@@ -36,3 +36,11 @@ jobs:
     - name: compile redis
       run: |
         docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+    - name: pack bin files
+      run: |
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ubuntu-${{ matrix.platform }}
+        path: /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz
