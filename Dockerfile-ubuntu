@@ -1,0 +1,10 @@
+ARG OSV
+FROM ubuntu:${OSV}
+
+CMD ["bash"]
+RUN apt-get update \
+    && apt-get install gcc make libssl-dev libsystemd-dev tcl tcl-tls -y \
+    && apt-get install --no-install-recommends pkg-config -y \
+    && mkdir /workspace
+
+VOLUME [ "/workspace" ]
