@@ -12,11 +12,15 @@ on:
         default: '22.04'
         required: false
         type: string
+env:
+  REDIS_BIN_FILES: redis-benchmark,redis-check-aof,redis-check-rdb,redis-cli,redis-sentinel,redis-server
+
 jobs:
   compile:
     strategy:
       matrix:
-        platform: ["amd64", "arm64"]
+        # platform: ["amd64", "arm64"]
+        platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -31,4 +35,4 @@ jobs:
       working-directory: /tmp
     - name: compile redis
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} make BUILD_TLS=yes USE_SYSTEMD=yes
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ",${{ env.REDIS_BIN_FILES }}" | sed 's/,/ src\//g')"
