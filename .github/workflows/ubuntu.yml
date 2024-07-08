@@ -54,11 +54,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: Remove release
-      uses: liudonghua123/delete-release-action@v1
-      with:
-        release_name: redis-${{ inputs.redisv }}_ubuntu-${{ inputs.osv }}
-        suppress_errors: true
+    # - name: Remove release
+    #   uses: liudonghua123/delete-release-action@v1
+    #   with:
+    #     release_name: redis-${{ inputs.redisv }}_ubuntu-${{ inputs.osv }}
+    #     suppress_errors: true
     # - name: Remove tag
     #   run: |
     #     git tag -d mongo-${{ needs.export.outputs.mongo }}_ubuntu-${{ needs.export.outputs.ubuntu }} || :
