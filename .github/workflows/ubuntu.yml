@@ -31,4 +31,4 @@ jobs:
       working-directory: /tmp
     - name: compile redis
       run: |
-        docker run --platform linux/${{ matrix.platform }} -it --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} make BUILD_TLS=yes USE_SYSTEMD=yes
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} make BUILD_TLS=yes USE_SYSTEMD=yes
