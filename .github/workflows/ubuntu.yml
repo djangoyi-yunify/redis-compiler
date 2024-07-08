@@ -23,8 +23,8 @@ jobs:
         platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    # - name: Checkout code
+    #   uses: actions/checkout@v4
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Prepare redis src
@@ -45,3 +45,32 @@ jobs:
       with:
         name: ubuntu-${{ matrix.platform }}
         path: /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz
+
+  release:
+    runs-on: ubuntu-latest
+    needs: compile
+    permissions:
+      contents: write
+    steps:
+    # - name: Checkout code
+    #   uses: actions/checkout@v4
+    - name: Remove release
+      uses: liudonghua123/delete-release-action@v1
+      with:
+        release_name: redis-${{ inputs.redisv }}_ubuntu-${{ inputs.osv }}
+        suppress_errors: true
+    # - name: Remove tag
+    #   run: |
+    #     git tag -d mongo-${{ needs.export.outputs.mongo }}_ubuntu-${{ needs.export.outputs.ubuntu }} || :
+    #     git push origin --delete mongo-${{ needs.export.outputs.mongo }}_ubuntu-${{ needs.export.outputs.ubuntu }} || :
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ubuntu-*
+        path: release
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          release/ubuntu-*
+        tag_name: redis-${{ inputs.redisv }}_ubuntu-${{ inputs.osv }}
