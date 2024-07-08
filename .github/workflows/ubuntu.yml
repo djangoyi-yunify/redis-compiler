@@ -1,0 +1,34 @@
+name: Compiler workflow for ubuntu
+on:
+  workflow_dispatch:
+    inputs:
+      redisv:
+        description: 'redis version'
+        default: '7.2.25'
+        required: false
+        type: string
+      osv:
+        description: 'ubuntu version'
+        default: '22.04'
+        required: false
+        type: string
+jobs:
+  compile:
+    strategy:
+      matrix:
+        platform: ["amd64", "arm64"]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Prepare redis src
+      run: |
+        wget https://download.redis.io/releases/redis-${{ redisv }}.tar.gz
+        tar -xzf redis-${{ redisv }}.tar.gz
+        ls -lh redis-${{ redisv }}
+      working-directory: /tmp
+    - name: compile redis
+      run: |
+        docker run --platform linux/${{ matrix.platform }} -it --rm -v /tmp/redis-${{ redisv }}:/workspace djangoyi/redis-compiler:ubuntu-${{ osv }} make BUILD_TLS=yes USE_SYSTEMD=yes
