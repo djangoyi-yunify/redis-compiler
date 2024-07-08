@@ -19,8 +19,8 @@ jobs:
   compile:
     strategy:
       matrix:
-        # platform: ["amd64", "arm64"]
-        platform: ["amd64"]
+        platform: ["amd64", "arm64"]
+        # platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
     # - name: Checkout code
@@ -33,7 +33,7 @@ jobs:
         tar -xzf redis-${{ inputs.redisv }}.tar.gz
         ls -lh redis-${{ inputs.redisv }}
       working-directory: /tmp
-    - name: compile redis
+    - name: compile redis && strip binaries
       run: |
         docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
     - name: pack bin files
