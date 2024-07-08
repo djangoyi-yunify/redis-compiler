@@ -25,10 +25,10 @@ jobs:
       uses: docker/setup-qemu-action@v3
     - name: Prepare redis src
       run: |
-        wget https://download.redis.io/releases/redis-${{ redisv }}.tar.gz
-        tar -xzf redis-${{ redisv }}.tar.gz
-        ls -lh redis-${{ redisv }}
+        wget https://download.redis.io/releases/redis-${{ inputs.redisv }}.tar.gz
+        tar -xzf redis-${{ inputs.redisv }}.tar.gz
+        ls -lh redis-${{ inputs.redisv }}
       working-directory: /tmp
     - name: compile redis
       run: |
-        docker run --platform linux/${{ matrix.platform }} -it --rm -v /tmp/redis-${{ redisv }}:/workspace djangoyi/redis-compiler:ubuntu-${{ osv }} make BUILD_TLS=yes USE_SYSTEMD=yes
+        docker run --platform linux/${{ matrix.platform }} -it --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} make BUILD_TLS=yes USE_SYSTEMD=yes
