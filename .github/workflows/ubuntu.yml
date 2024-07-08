@@ -72,5 +72,5 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          release/ubuntu-*
+          release/*
         tag_name: redis-${{ inputs.redisv }}_ubuntu-${{ inputs.osv }}
