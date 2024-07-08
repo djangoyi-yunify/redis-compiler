@@ -39,6 +39,7 @@ jobs:
     - name: pack bin files
       run: |
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
+      working-directory: /tmp/redis-${{ inputs.redisv }}
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
