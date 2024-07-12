@@ -1,0 +1,9 @@
+ARG OSV
+ARG NAMESPACE
+FROM ${NAMESPACE}/kylin-server:${OSV}
+
+CMD ["bash"]
+RUN dnf install openssl-devel systemd-devel tcl -y \
+    && mkdir /workspace
+
+VOLUME [ "/workspace" ]

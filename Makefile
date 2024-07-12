@@ -1,8 +1,13 @@
 OSV ?= 22.04
 NAMESPACE ?= djangoyi
 
+# OSV=22.04 make ubuntu-build
 ubuntu-build:
 	docker buildx build -f Dockerfile-ubuntu --build-arg OSV=${OSV} --platform linux/amd64,linux/arm64 -t ${NAMESPACE}/redis-compiler:ubuntu-${OSV} . --push
+
+# OSV=10sp2 make kylin-build
+kylin-build:
+	docker buildx build -f Dockerfile-kylin --build-arg OSV=${OSV} --build-arg NAMESPACE=${NAMESPACE} --platform linux/amd64,linux/arm64 -t ${NAMESPACE}/redis-compiler:kylin-${OSV} . --push
 
 # be sure kylin-server-10sp2-amd64.tgz and kylin-server-10sp2-arm64.tgz exist in folder kylin-server
 # pepare kylin rootfs by exec: OSV=10sp2 make kylin-base
