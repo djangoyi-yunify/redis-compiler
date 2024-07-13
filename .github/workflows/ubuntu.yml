@@ -19,7 +19,7 @@ on:
         type: string
       pgsz-arm64:
         description: 'jemalloc page'
-        default: '16'
+        default: '12'
         required: false
         type: string
 env:
@@ -29,8 +29,8 @@ jobs:
   compile:
     strategy:
       matrix:
-        # platform: ["amd64", "arm64"]
-        platform: ["amd64"]
+        platform: ["amd64", "arm64"]
+        # platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
     - name: Setup jemalloc compile option
