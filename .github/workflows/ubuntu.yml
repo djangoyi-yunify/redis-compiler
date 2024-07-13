@@ -12,6 +12,16 @@ on:
         default: '22.04'
         required: false
         type: string
+      pgsz-amd64:
+        description: 'jemalloc page'
+        default: '12'
+        required: false
+        type: string
+      pgsz-arm64:
+        description: 'jemalloc page'
+        default: '16'
+        required: false
+        type: string
 env:
   REDIS_BIN_FILES: redis-benchmark,redis-check-aof,redis-check-rdb,redis-cli,redis-sentinel,redis-server
 
@@ -19,12 +29,18 @@ jobs:
   compile:
     strategy:
       matrix:
-        platform: ["amd64", "arm64"]
-        # platform: ["amd64"]
+        # platform: ["amd64", "arm64"]
+        platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
-    # - name: Checkout code
-    #   uses: actions/checkout@v4
+    - name: Setup jemalloc compile option
+      id: jemalloc
+      run: |
+        if [ ${{ matrix.platform }} = "amd64" ]; then
+          echo "PGSZ=${{ inputs.pgsz-amd64 }}" >> $GITHUB_OUTPUT
+        else
+          echo "PGSZ=${{ inputs.pgsz-arm64 }}" >> $GITHUB_OUTPUT
+        fi
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Prepare redis src
@@ -35,7 +51,7 @@ jobs:
       working-directory: /tmp
     - name: compile redis && strip binaries
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
     - name: pack bin files
       run: |
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
