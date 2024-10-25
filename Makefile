@@ -23,3 +23,7 @@ prepare-kylin-rootfs: clean-kylin-server-tmp
 
 clean-kylin-server-tmp:
 	rm -rf kylin-server/tmp/*
+
+# OSV=3.20.3 make alpine-build
+alpine-build:
+	docker buildx build -f Dockerfile-alpine --build-arg OSV=${OSV} --platform linux/amd64,linux/arm64 -t ${NAMESPACE}/redis-compiler:alpine-${OSV} . --push

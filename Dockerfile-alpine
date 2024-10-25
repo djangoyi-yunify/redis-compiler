@@ -1,0 +1,7 @@
+ARG OSV
+FROM alpine:${OSV}
+
+CMD ["sh"]
+RUN apk add --no-cache coreutils dpkg-dev dpkg gcc linux-headers make musl-dev openssl-dev wget busybox-static openssl-libs-static
+
+VOLUME [ "/workspace" ]
