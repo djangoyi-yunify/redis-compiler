@@ -1,0 +1,92 @@
+name: Compiler workflow for alpine
+on:
+  workflow_dispatch:
+    inputs:
+      redisv:
+        description: 'redis version'
+        default: '7.2.6'
+        required: false
+        type: string
+      osv:
+        description: 'alpine version'
+        default: '3.20.3'
+        required: false
+        type: string
+      pgsz-amd64:
+        description: 'jemalloc page'
+        default: '12'
+        required: false
+        type: string
+      pgsz-arm64:
+        description: 'jemalloc page'
+        default: '12'
+        required: false
+        type: string
+env:
+  REDIS_BIN_FILES: redis-benchmark,redis-check-aof,redis-check-rdb,redis-cli,redis-sentinel,redis-server
+
+jobs:
+  compile:
+    strategy:
+      matrix:
+        platform: ["amd64", "arm64"]
+        # platform: ["amd64"]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup jemalloc compile option
+      id: jemalloc
+      run: |
+        if [ ${{ matrix.platform }} = "amd64" ]; then
+          echo "PGSZ=${{ inputs.pgsz-amd64 }}" >> $GITHUB_OUTPUT
+        else
+          echo "PGSZ=${{ inputs.pgsz-arm64 }}" >> $GITHUB_OUTPUT
+        fi
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Prepare redis src
+      run: |
+        wget https://download.redis.io/releases/redis-${{ inputs.redisv }}.tar.gz
+        tar -xzf redis-${{ inputs.redisv }}.tar.gz
+        ls -lh redis-${{ inputs.redisv }}
+      working-directory: /tmp
+    - name: compile redis && strip binaries
+      run: |
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes LDFLAGS='-static' && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+    - name: pack bin files
+      run: |
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
+      working-directory: /tmp/redis-${{ inputs.redisv }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: alpine-${{ matrix.platform }}
+        path: /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz
+
+  release:
+    runs-on: ubuntu-latest
+    needs: compile
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    # - name: Remove release
+    #   uses: liudonghua123/delete-release-action@v1
+    #   with:
+    #     release_name: redis-${{ inputs.redisv }}_ubuntu-${{ inputs.osv }}
+    #     suppress_errors: true
+    # - name: Remove tag
+    #   run: |
+    #     git tag -d mongo-${{ needs.export.outputs.mongo }}_ubuntu-${{ needs.export.outputs.ubuntu }} || :
+    #     git push origin --delete mongo-${{ needs.export.outputs.mongo }}_ubuntu-${{ needs.export.outputs.ubuntu }} || :
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        pattern: alpine-*
+        path: release
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          release/alpine-*/*
+        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}-static
