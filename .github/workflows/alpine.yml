@@ -1,4 +1,4 @@
-name: Compiler workflow for alpine(static)
+name: Compiler workflow for alpine
 on:
   workflow_dispatch:
     inputs:
@@ -51,7 +51,7 @@ jobs:
       working-directory: /tmp
     - name: compile redis && strip binaries
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes LDFLAGS='-static' && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
     - name: pack bin files
       run: |
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
@@ -89,4 +89,4 @@ jobs:
       with:
         files: |
           release/alpine-*/*
-        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}-static
+        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}
