@@ -51,6 +51,7 @@ RUN apt-get update \
         libtool \
         pkg-config \
         libsystemd-dev \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         # tcl for make test
         tcl \
         tcl-tls \
