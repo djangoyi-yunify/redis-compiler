@@ -2,6 +2,31 @@ ARG OSV
 FROM alpine:${OSV}
 
 CMD ["sh"]
-RUN apk add --no-cache coreutils dpkg-dev dpkg gcc linux-headers make musl-dev openssl-dev wget busybox-static openssl-libs-static
+RUN apk add --no-cache \
+  coreutils \
+  dpkg-dev \
+  dpkg \
+  gcc \
+  g++ \
+  linux-headers \
+  make \
+  musl-dev \
+  openssl-dev \
+  wget \
+  busybox-static \
+  openssl-libs-static \
+  jemalloc-static \
+  jemalloc-dev \
+  cmake \
+  libtool \
+  git \
+  bash \
+  bsd-compat-headers \
+  python3 \
+  clang-dev \
+  autoconf \
+  automake \
+  cargo \
+  rust
 
 VOLUME [ "/workspace" ]
