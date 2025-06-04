@@ -62,7 +62,7 @@ jobs:
       run: |
         find ./ -type f -exec strip "{}" \;
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz *
-      working-directory: /tmp/redis-output
+      working-directory: /tmp/redis-${{ inputs.redisv }}/redis-output
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
