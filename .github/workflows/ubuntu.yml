@@ -51,16 +51,15 @@ jobs:
         tar -xzf redis-${{ inputs.redisv }}.tar.gz
         ls -lh redis-${{ inputs.redisv }}
       working-directory: /tmp
-    - name: compile redis
+    - name: compile redis and strip binaries
       run: |
         if [ ${{ steps.redismain.outputs.RM }} -lt 8 ]; then
-          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && PREFIX=/workspace/redis-output make install"
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
         else
-          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/workspace/redis-output make install"
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
         fi
-    - name: strip and pack bin files
+    - name: pack bin files
       run: |
-        find ./ -type f -exec strip "{}" \;
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz *
       working-directory: /tmp/redis-${{ inputs.redisv }}/redis-output
     - name: Upload artifact
