@@ -4,12 +4,12 @@ on:
     inputs:
       redisv:
         description: 'redis version'
-        default: '7.2.5'
+        default: '8.0.2'
         required: false
         type: string
       osv:
         description: 'kylin version'
-        default: '10sp2'
+        default: '10sp3'
         required: false
         type: string
       pgsz-amd64:
@@ -22,8 +22,6 @@ on:
         default: '16'
         required: false
         type: string
-env:
-  REDIS_BIN_FILES: redis-benchmark,redis-check-aof,redis-check-rdb,redis-cli,redis-sentinel,redis-server
 
 jobs:
   compile:
@@ -41,6 +39,10 @@ jobs:
         else
           echo "PGSZ=${{ inputs.pgsz-arm64 }}" >> $GITHUB_OUTPUT
         fi
+    - name: Setup redis main version
+      id: redismain
+      run: |
+        echo "RM=$(echo ${{ inputs.redisv }} | cut -d'.' -f1)" >> $GITHUB_OUTPUT
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Prepare redis src
@@ -48,14 +50,22 @@ jobs:
         wget https://download.redis.io/releases/redis-${{ inputs.redisv }}.tar.gz
         tar -xzf redis-${{ inputs.redisv }}.tar.gz
         ls -lh redis-${{ inputs.redisv }}
+        cp redis-${{ inputs.redisv }} redis-src-round1
+        cp redis-${{ inputs.redisv }} redis-src-round2
       working-directory: /tmp
-    - name: compile redis && strip binaries
+    - name: compile redis && strip binaries(round 1, without redisearch)
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+        sed -i 's/^SUBDIRS.*$/SUBDIRS = redisjson redistimeseries redisbloom/' modules/Makefile
+        if [ ${{ steps.redismain.outputs.RM }} -lt 8 ]; then
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-src-round1:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
+        else
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-src-round1:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
+        fi
     - name: pack bin files
       run: |
-        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
-      working-directory: /tmp/redis-${{ inputs.redisv }}
+        cp redis-src-round1/redis-output ./
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz redis-output/*
+      working-directory: /tmp
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
