@@ -50,8 +50,8 @@ jobs:
         wget https://download.redis.io/releases/redis-${{ inputs.redisv }}.tar.gz
         tar -xzf redis-${{ inputs.redisv }}.tar.gz
         ls -lh redis-${{ inputs.redisv }}
-        cp redis-${{ inputs.redisv }} redis-src-round1
-        cp redis-${{ inputs.redisv }} redis-src-round2
+        cp -r redis-${{ inputs.redisv }} redis-src-round1
+        cp -r redis-${{ inputs.redisv }} redis-src-round2
       working-directory: /tmp
     - name: compile redis && strip binaries(round 1, without redisearch)
       run: |
@@ -63,7 +63,7 @@ jobs:
         fi
     - name: pack bin files
       run: |
-        cp redis-src-round1/redis-output ./
+        cp -r redis-src-round1/redis-output ./
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz redis-output/*
       working-directory: /tmp
     - name: Upload artifact
