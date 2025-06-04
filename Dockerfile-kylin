@@ -1,9 +1,51 @@
 ARG OSV
 ARG NAMESPACE
+
+# download cmake
+FROM alpine:latest AS downloader-cmake
+ARG TARGETARCH
+
+RUN apk add --no-cache wget tar
+
+WORKDIR /tmp
+
+# install cmake-3.31.7
+# needed by redis-8.x
+ENV CMV_MAIN=3.31
+ENV CMV_MINI=7
+ENV CM_URL="https://github.com/Kitware/CMake/releases/download"
+RUN case "${TARGETARCH}" in \
+    "amd64") \
+        wget -O install.sh ${CM_URL}/v${CMV_MAIN}.${CMV_MINI}/cmake-${CMV_MAIN}.${CMV_MINI}-linux-x86_64.sh ;; \
+    "arm64") \
+        wget -O install.sh ${CM_URL}/v${CMV_MAIN}.${CMV_MINI}/cmake-${CMV_MAIN}.${CMV_MINI}-linux-aarch64.sh ;; \
+    *) echo "ERROR: Unsupported arch"; exit 1 ;; \
+    esac && \
+    mkdir /tmp/cmake && \
+    /bin/sh /tmp/install.sh --prefix=/tmp/cmake --exclude-subdir
+
+# download jq
+FROM alpine:latest AS downloader-jq
+ARG TARGETARCH
+
+RUN apk add --no-cache wget tar
+
+WORKDIR /tmp
+
+# install jq-1.8.0
+# needed by module: redistimeseries
+ENV JQV=1.8.0
+ENV JQ_URL="https://github.com/jqlang/jq/releases/download"
+RUN wget -O jq ${JQ_URL}/jq-${JQV}/jq-linux-${TARGETARCH} && chmod +x /tmp/jq
+
 FROM ${NAMESPACE}/kylin-server:${OSV}
+ENV CMV_MAIN=3.31
+COPY --from=downloader-cmake /tmp/cmake/bin/* /usr/bin/
+COPY --from=downloader-cmake /tmp/cmake/share/cmake-${CMV_MAIN} /usr/share/cmake-${CMV_MAIN}
+COPY --from=downloader-jq /tmp/jq /usr/bin/
 
 CMD ["bash"]
-RUN dnf install openssl-devel systemd-devel tcl gcc make -y \
+RUN dnf install openssl-devel systemd-devel tcl-devel gcc make clang-devel libtool git wget python3 -y \
     && mkdir /workspace
 
 VOLUME [ "/workspace" ]
