@@ -60,7 +60,7 @@ jobs:
         fi
     - name: strip and pack bin files
       run: |
-        find /tmp/redis-output/ -type f -exec strip "{}" \;
+        #find /tmp/redis-output/ -type f -exec strip "{}" \;
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz /tmp/redis-output/*
       working-directory: /tmp/redis-${{ inputs.redisv }}
     - name: Upload artifact
