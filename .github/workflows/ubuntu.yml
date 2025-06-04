@@ -4,7 +4,7 @@ on:
     inputs:
       redisv:
         description: 'redis version'
-        default: '7.2.5'
+        default: '8.0.2'
         required: false
         type: string
       osv:
@@ -41,6 +41,10 @@ jobs:
         else
           echo "PGSZ=${{ inputs.pgsz-arm64 }}" >> $GITHUB_OUTPUT
         fi
+    - name: Setup redis main version
+      id: redismain
+      run: |
+        echo "RM=$(echo ${{ inputs.redisv }} | cut -d'.' -f1)" >> $GITHUB_OUTPUT
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Prepare redis src
@@ -51,10 +55,14 @@ jobs:
       working-directory: /tmp
     - name: compile redis && strip binaries
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+        if [ ${{ steps.redismain.outputs.RM }} -lt 8 ]; then
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+        else
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/tmp/redis-output make install"
+        fi
     - name: pack bin files
       run: |
-        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz /tmp/redis-output/*)
       working-directory: /tmp/redis-${{ inputs.redisv }}
     - name: Upload artifact
       uses: actions/upload-artifact@v4
