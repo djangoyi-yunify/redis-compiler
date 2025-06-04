@@ -22,8 +22,6 @@ on:
         default: '12'
         required: false
         type: string
-env:
-  REDIS_BIN_FILES: redis-benchmark,redis-check-aof,redis-check-rdb,redis-cli,redis-sentinel,redis-server
 
 jobs:
   compile:
@@ -53,16 +51,17 @@ jobs:
         tar -xzf redis-${{ inputs.redisv }}.tar.gz
         ls -lh redis-${{ inputs.redisv }}
       working-directory: /tmp
-    - name: compile redis && strip binaries
+    - name: compile redis
       run: |
         if [ ${{ steps.redismain.outputs.RM }} -lt 8 ]; then
-          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && && PREFIX=/tmp/redis-output make install"
         else
           docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:ubuntu-${{ inputs.osv }} bash -c "export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/tmp/redis-output make install"
         fi
-    - name: pack bin files
+    - name: strip and pack bin files
       run: |
-        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz /tmp/redis-output/*)
+        find /tmp/redis-output/ -type f -exec strip "{}" \;
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz /tmp/redis-output/*
       working-directory: /tmp/redis-${{ inputs.redisv }}
     - name: Upload artifact
       uses: actions/upload-artifact@v4
