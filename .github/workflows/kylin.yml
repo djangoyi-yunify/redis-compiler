@@ -53,14 +53,14 @@ jobs:
         cp -r redis-${{ inputs.redisv }} redis-src-round1
         cp -r redis-${{ inputs.redisv }} redis-src-round2
       working-directory: /tmp
-    # - name: compile redis && strip binaries(round 1, without redisearch)
-    #   run: |
-    #     sed -i 's/^SUBDIRS.*$/SUBDIRS = redisjson redistimeseries redisbloom/' /tmp/redis-src-round1/modules/Makefile
-    #     if [ ${{ steps.redismain.outputs.RM }} -lt 8 ]; then
-    #       docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-src-round1:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "python3 -m venv /opt/py && source /opt/py/bin/activate && JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
-    #     else
-    #       docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-src-round1:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "python3 -m venv /opt/py && source /opt/py/bin/activate && export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
-    #     fi
+    - name: compile redis && strip binaries(round 1, without redisearch)
+      run: |
+        sed -i 's/^SUBDIRS.*$/SUBDIRS = redisjson redistimeseries redisbloom/' /tmp/redis-src-round1/modules/Makefile
+        if [ ${{ steps.redismain.outputs.RM }} -lt 8 ]; then
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-src-round1:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "python3 -m venv /opt/py && source /opt/py/bin/activate && JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes USE_SYSTEMD=yes && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
+        else
+          docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-src-round1:/workspace -w /workspace djangoyi/redis-compiler:kylin-${{ inputs.osv }} bash -c "python3 -m venv /opt/py && source /opt/py/bin/activate && export BUILD_TLS=yes;export BUILD_WITH_MODULES=yes;export INSTALL_RUST_TOOLCHAIN=yes;export DISABLE_WERRORS=yes;JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make -j "$(nproc)" all && PREFIX=/workspace/redis-output make install && find /workspace/redis-output -type f -exec strip "{}" \;"
+        fi
     - name: download gcc
       run: |
         wget https://github.com/djangoyi-yunify/kylin-tools/releases/download/gcc-11.5.0_kylin-10sp3/gcc-11.5.0-${{ matrix.platform }}.tgz
