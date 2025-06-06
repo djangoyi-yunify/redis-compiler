@@ -78,7 +78,8 @@ jobs:
       run: |
         cp -r redis-src-round1/redis-output ./
         cp redis-src-round2/redis-output/lib/redis/modules/redisearch.so redis-output/lib/redis/modules
-        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz redis-output/*
+        cd redis-output
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz *
       working-directory: /tmp
     - name: Upload artifact
       uses: actions/upload-artifact@v4
