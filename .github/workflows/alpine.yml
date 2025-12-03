@@ -89,4 +89,4 @@ jobs:
       with:
         files: |
           release/alpine-*/*
-        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}
+        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}-${{ inputs.pgsz-amd64 }}${{ inputs.pgsz-arm64 }}
