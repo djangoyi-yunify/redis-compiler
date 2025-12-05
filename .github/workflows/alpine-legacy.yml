@@ -1,4 +1,4 @@
-name: Compiler workflow for alpine
+name: Compiler workflow for alpine - legacy
 on:
   workflow_dispatch:
     inputs:
