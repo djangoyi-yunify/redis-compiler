@@ -17,8 +17,8 @@ jobs:
   compile:
     strategy:
       matrix:
-        # platform: ["amd64", "arm64"]
-        platform: ["amd64"]
+        platform: ["amd64", "arm64"]
+        # platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
     - name: Set up QEMU
