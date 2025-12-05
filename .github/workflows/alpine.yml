@@ -34,7 +34,7 @@ jobs:
         docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=12' make BUILD_TLS=yes && make PREFIX=/workspace/12 install && strip /workspace/12/bin/*"
     - name: compile redis for system page size = 16
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=16' make BUILD_TLS=yes && make PREFIX=/workspace/16 install && strip /workspace/16/bin/*"
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "make distclean &&JEMALLOC_CONFIGURE_OPTS='--with-lg-page=16' make BUILD_TLS=yes && make PREFIX=/workspace/16 install && strip /workspace/16/bin/*"
     - name: pack bin files
       run: |
         tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz 12 16
