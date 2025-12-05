@@ -4,26 +4,14 @@ on:
     inputs:
       redisv:
         description: 'redis version'
-        default: '7.2.6'
+        default: '7.2.11'
         required: false
         type: string
       osv:
         description: 'alpine version'
-        default: '3.20.3'
+        default: '3.23.0'
         required: false
         type: string
-      pgsz-amd64:
-        description: 'jemalloc page'
-        default: '12'
-        required: false
-        type: string
-      pgsz-arm64:
-        description: 'jemalloc page'
-        default: '12'
-        required: false
-        type: string
-env:
-  REDIS_BIN_FILES: redis-benchmark,redis-check-aof,redis-check-rdb,redis-cli,redis-sentinel,redis-server
 
 jobs:
   compile:
@@ -33,14 +21,6 @@ jobs:
         # platform: ["amd64"]
     runs-on: ubuntu-latest
     steps:
-    - name: Setup jemalloc compile option
-      id: jemalloc
-      run: |
-        if [ ${{ matrix.platform }} = "amd64" ]; then
-          echo "PGSZ=${{ inputs.pgsz-amd64 }}" >> $GITHUB_OUTPUT
-        else
-          echo "PGSZ=${{ inputs.pgsz-arm64 }}" >> $GITHUB_OUTPUT
-        fi
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Prepare redis src
@@ -49,12 +29,15 @@ jobs:
         tar -xzf redis-${{ inputs.redisv }}.tar.gz
         ls -lh redis-${{ inputs.redisv }}
       working-directory: /tmp
-    - name: compile redis && strip binaries
+    - name: compile redis for system page size = 12
       run: |
-        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=${{ steps.jemalloc.outputs.PGSZ }}' make BUILD_TLS=yes LDFLAGS='-static' && strip $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')"
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "JEMALLOC_CONFIGURE_OPTS='--with-lg-page=12' make BUILD_TLS=yes LDFLAGS='-static' && make PREFIX=/workspace/12 install && strip /workspace/12/bin/*"
+    - name: compile redis for system page size = 16
+      run: |
+        docker run --platform linux/${{ matrix.platform }} --rm -v /tmp/redis-${{ inputs.redisv }}:/workspace -w /workspace djangoyi/redis-compiler:alpine-${{ inputs.osv }} sh -c "make distclean &&JEMALLOC_CONFIGURE_OPTS='--with-lg-page=16' make BUILD_TLS=yes LDFLAGS='-static' && make PREFIX=/workspace/16 install && strip /workspace/16/bin/*"
     - name: pack bin files
       run: |
-        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz $(echo ,${{ env.REDIS_BIN_FILES }} | sed 's/,/ src\//g')
+        tar -czf /tmp/redis-${{ inputs.redisv }}-${{ matrix.platform }}.tgz 12 16
       working-directory: /tmp/redis-${{ inputs.redisv }}
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -89,4 +72,4 @@ jobs:
       with:
         files: |
           release/alpine-*/*
-        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}-static-${{ inputs.pgsz-amd64 }}${{ inputs.pgsz-arm64 }}
+        tag_name: redis-${{ inputs.redisv }}_alpine-${{ inputs.osv }}-static
